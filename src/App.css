@@ -1,0 +1,45 @@
+html, body {
+  font-family: "DIN", sans-serif !important;
+}
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #09d3ac;
+}
+
+body {
+  background: #171D20 !important;
+}
+
+.titlebar-window{
+  -webkit-app-region: drag;
+  background: rgb(49, 70, 80);
+  height: 35px;
+  width: 100%;
+  z-index: -2;
+}
+.titlebar-close-button{
+  -webkit-appregion: no drag;
+  position: absolute;
+  right: 1%;
+  top: 25%;
+  z-index: 15;
+  transform: scale(0.4)
+}
