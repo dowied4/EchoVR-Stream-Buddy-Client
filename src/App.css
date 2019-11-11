@@ -33,13 +33,14 @@ body {
   background: rgb(49, 70, 80);
   height: 35px;
   width: 100%;
-  z-index: -2;
+  z-index: -1 !important;
 }
 .titlebar-close-button{
   -webkit-appregion: no drag;
   position: absolute;
+  background: red !important;
   right: 1%;
   top: 25%;
-  z-index: 15;
-  transform: scale(0.4)
+  z-index: 10 !important;
+  transform: scale(0.4) 
 }
