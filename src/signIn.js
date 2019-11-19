@@ -46,7 +46,6 @@ class Signin extends Component {
 		this.props.fb.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
 		.then((auth) => {
 			//On successful login it pushes to next screen
-			console.log(auth)
 			this.props.history.push({
 				pathname: '/record',
 				loggedIn: true,

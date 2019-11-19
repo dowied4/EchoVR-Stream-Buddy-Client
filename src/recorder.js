@@ -22,7 +22,6 @@ class Recorder extends Component {
 			this.props.history.push('/')
 		}
 		this.db = this.props.fb.firestore();
-		console.log(this.props.history.location)
 		if (this.props.history.location.uid){
 			this.setState({
 				loaded: true
@@ -41,7 +40,7 @@ class Recorder extends Component {
 			.catch((err) => {
 				console.warn(err)
 			})
-			console.log(this.state.match)
+			// console.log(this.state.match)
 			}
 		}
 	}
@@ -64,6 +63,7 @@ class Recorder extends Component {
 			this.setState({
 				userName: snapShot.data().client_name
 			})
+			// console.log(snapShot.data())
 		})
 		.catch((err) => {
 			console.warn(err)
