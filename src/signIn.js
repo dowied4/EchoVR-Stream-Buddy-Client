@@ -1,11 +1,8 @@
 import React, { Component } from 'react';
 import { Grid, Input, Button, Divider, Message, Transition } from 'semantic-ui-react'
-import * as firebase from "firebase/app";
 require('firebase/auth');
-require("firebase/firestore");
 
-
-class signIn extends Component {
+class Signin extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -20,28 +17,15 @@ class signIn extends Component {
 		this.handleChange = this.handleChange.bind(this);
 		this.signIn = this.signIn.bind(this);
 		this.signUp = this.signUp.bind(this);
-
-		// .env variables for firebase
-		this.firebaseConfig = {
-			apiKey: process.env.REACT_APP_API_KEY,
-			authDomain: process.env.REACT_APP_AUTH_DOMAIN,
-			databaseURL: process.env.REACT_APP_DATABASE,
-			projectId: process.env.REACT_APP_PROJECT_ID,
-			storageBucket: process.env.REACT_APP_STOREAGE_BUCKET,
-			messagingSenderId: process.env.REACT_APP_MESSAGINGID,
-			appId: process.env.REACT_APP_APP_ID,
-			measurementId: process.env.REACT_APP_MEASUREMENT
-		  };
 	}
 
 	componentDidMount(){
-		//Check if an instance of firebase app exists
-		if(!firebase.apps.length){
-			firebase.initializeApp(this.firebaseConfig)
+		//Check if an instance of this.props.fb app exists
+		if(this.props.fb){
+			this.setState({
+				loaded: true
+			})
 		}
-		this.setState({
-			loaded: true
-		})
 	}
 
 	handleChange = e => {
@@ -54,12 +38,14 @@ class signIn extends Component {
 
 	signIn(){
 		// comment out this auth stuff if you want to go to the recording screen to test
-		firebase.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
-		.then(() => {
+		this.props.fb.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
+		.then((auth) => {
 			//On successful login it pushes to next screen
+			console.log(auth)
 			this.props.history.push({
 				pathname: '/record',
-				loggedIn: true
+				loggedIn: true,
+				uid: auth.user.uid
 			})
 		})
 		.catch(err => {
@@ -73,17 +59,11 @@ class signIn extends Component {
 				error: {...this.state.error, ...tempErr}
 			});
 		})
-		// uncomment below out to make Sign In redirect without firebase auth
-
-		// this.props.history.push({
-		// 	pathname: '/record',
-		// 	loggedIn: true
-		// })
 	}
 
 	signUp(){
 		//idk if we should have predetermined accounts for streamers but this signup is hear if we want it
-		firebase.auth().createUserWithEmailAndPassword(this.state.email, this.state.password)
+		this.props.fb.auth().createUserWithEmailAndPassword(this.state.email, this.state.password)
 		.catch((err) => {
 			console.log(err.code, err.message)
 		})
@@ -151,4 +131,4 @@ class signIn extends Component {
 	}
 }
 
-export default signIn;
+export default Signin;
