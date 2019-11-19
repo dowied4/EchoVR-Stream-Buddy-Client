@@ -107,7 +107,7 @@ class Recorder extends Component {
 					<Grid.Row>
 						{this.state.userName ? <h1 style={{color: "white", fontWeight: "bold", marginTop: 20}}>Welcome {this.state.userName}!</h1> : null}
 					</Grid.Row>
-					<Grid.Row style={{marginTop: 25, marginBottom: 40}}>
+					<Grid.Row style={{marginTop: 100, marginBottom: 150}}>
 						<Popup
 							trigger = {
 								<Button onMouseDown={e => e.preventDefault()} animated color="teal">
