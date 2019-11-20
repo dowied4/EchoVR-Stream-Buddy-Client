@@ -30,17 +30,27 @@ class Recorder extends Component {
 	}
 
 	componentDidUpdate(prevProps, prevState){
+		if (this.state.match && (prevState.recording !== this.state.recording)) {
+			console.log("switch")
+			this.db.collection('matchsnaps').doc(this.props.history.location.uid).set(this.state.match)
+				.then(() => {
+					console.log("Successfully stored")
+				})
+				.catch((err) => {
+					console.warn(err)
+				})
+		}
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
-			if(this.state.recording && (this.state.match.game_status !== prevState.match.game_status)){
-			this.db.collection('matchsnaps').doc(this.props.history.location.uid).set(this.state.match)
-			.then(() => {
-				console.log("Successfully stored")
-			})
-			.catch((err) => {
-				console.warn(err)
-			})
-			// console.log(this.state.match)
+			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
+				this.db.collection('matchsnaps').doc(this.props.history.location.uid).set(this.state.match)
+				.then(() => {
+					console.log("Successfully stored")
+				})
+				.catch((err) => {
+					console.warn(err)
+				})
+				// console.log(this.state.match)
 			}
 		}
 	}

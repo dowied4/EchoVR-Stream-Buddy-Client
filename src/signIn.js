@@ -131,26 +131,28 @@ class Signin extends Component {
 							icon="close"
 							onClick={() => {console.log("y u no wurk")}}/>
 					</Grid.Row>
+					<Transition visible={this.state.error.status} animation='scale' duration={500}>
+						<Message
+							name='authError'
+							error
+							negative
+							style={{position: "absolute", top: "75px"}}
+							>
+							<Message.Header>An Error Occurred</Message.Header>
+							<p>{this.state.error.message}</p>
+						</Message>
+					</Transition>
+					<Transition visible={this.state.success} animation='scale' duration={500}>
+						<Message
+							positive
+							style={{position: "absolute", top: "75px"}}
+							>
+							<Message.Header>Success!</Message.Header>
+							<p>Your account has now been created. Please sign in.</p>
+						</Message>
+					</Transition>
 					<Grid.Row style={{marginTop: 150}}>
 						<Grid.Column style={{ maxWidth: 450 }}>
-							<Transition visible={this.state.error.status} animation='scale' duration={500}>
-								<Message
-									name='authError'
-									error
-									negative
-									>
-									<Message.Header>An Error Occurred</Message.Header>
-									<p>{this.state.error.message}</p>
-								</Message>
-							</Transition>
-							<Transition visible={this.state.success} animation='scale' duration={500}>
-								<Message
-									positive
-									>
-									<Message.Header>Success!</Message.Header>
-									<p>Your account has now been created. Please sign in.</p>
-								</Message>
-							</Transition>
 							<Input
 								fluid icon='user'
 								iconPosition='left'
@@ -177,7 +179,7 @@ class Signin extends Component {
 							<Button.Group fluid>
 								<Button positive onClick={this.signIn}>Sign In</Button>
 								<Button.Or />
-								<Button onClick={()=>this.setState({signingUp: true})}>Sign Up</Button>
+								<Button onClick={()=>this.setState({signingUp: true,success: false, error: {status:false}})}>Sign Up</Button>
 							</Button.Group>
 						</Grid.Column>
 					</Grid.Row>
@@ -196,30 +198,32 @@ class Signin extends Component {
 							onClick={() => {console.log("y u no wurk")}}/>
 					</Grid.Row>
 					<Grid.Row>
-						<Button size={"mini"} animated style={{position: "absolute", left: "40px", top: "20px"}} onClick={() => this.setState({signingUp: false})}>
+						<Button size={"mini"} animated style={{position: "absolute", left: "40px", top: "20px"}} onClick={() => this.setState({signingUp: false, error: {status:false}})}>
 							<Button.Content visible><Icon name='arrow left'/></Button.Content>
 							<Button.Content hidden>Back</Button.Content>
 						</Button>
 					</Grid.Row>
+					<Transition visible={this.state.error.status} animation='scale' duration={500}>
+						<Message
+							name='authError'
+							error
+							negative
+							style={{position: "absolute", top: "20px"}}
+							>
+							<Message.Header>An Error Occurred</Message.Header>
+							<p>{this.state.error.message}</p>
+						</Message>
+					</Transition>
+					<Transition visible={this.state.success} animation='scale' duration={500}>
+						<Message
+							positive
+							style={{position: "absolute", top: "25px"}}
+							>
+							<Message.Header>Success!</Message.Header>
+						</Message>
+					</Transition>
 					<Grid.Row style={{marginTop: 50}}>
 						<Grid.Column style={{ maxWidth: 450 }}>
-							<Transition visible={this.state.error.status} animation='scale' duration={500}>
-								<Message
-									name='authError'
-									error
-									negative
-									>
-									<Message.Header>An Error Occurred</Message.Header>
-									<p>{this.state.error.message}</p>
-								</Message>
-							</Transition>
-							<Transition visible={this.state.success} animation='scale' duration={500}>
-								<Message
-									positive
-									>
-									<Message.Header>Success!</Message.Header>
-								</Message>
-							</Transition>
 							<Input
 								fluid icon='user'
 								iconPosition='left'
@@ -256,9 +260,8 @@ class Signin extends Component {
 							<Button.Group fluid>
 								<Button disabled >Sign In</Button>
 								<Button.Or />
-								<Button positive onClick={()=>this.setState(this.signUp)}>Sign Up</Button>
+								<Button positive onClick={this.signUp}>Sign Up</Button>
 							</Button.Group>
-							
 						</Grid.Column>
 					</Grid.Row>
 				</Grid>
