@@ -41,6 +41,12 @@ class Signin extends Component {
 		});
 	}
 
+	handleKeyPress = e => {
+		if(e.key === 'Enter'){
+		  this.signIn()
+		}
+	  }
+
 	signIn(){
 		// comment out this auth stuff if you want to go to the recording screen to test
 		this.props.fb.auth().signInWithEmailAndPassword(this.state.email, this.state.password)
@@ -173,6 +179,7 @@ class Signin extends Component {
 								style={{marginBottom: 75}}
 								onChange={this.handleChange}
 								autoComplete='current-password'
+								onKeyPress={this.handleKeyPress}
 								required
 							/>
 							<Divider style={{marginTop: 50, marginBottom: 25}}/>
