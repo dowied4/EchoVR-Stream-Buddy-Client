@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Button, Icon, Popup } from 'semantic-ui-react';
+import { Grid, Button, Icon, Popup} from 'semantic-ui-react';
 import Axios from 'axios';
 require("firebase/firestore");
 
@@ -8,7 +8,12 @@ class Recorder extends Component {
 		super(props);
 		this.state = {
 			loaded: false,
-			recording: false
+			recording: false,
+			twitchInfo: {
+				login: null,
+				id: null,
+				image: null,
+			}
 		 }
 		 this.logout = this.logout.bind(this);
 		 this.startRecording = this.startRecording.bind(this);
@@ -18,6 +23,31 @@ class Recorder extends Component {
 	}
 
 	componentDidMount(){
+		if(this.props.code){
+			Axios.post('https://id.twitch.tv/oauth2/token?',null,
+			{	params: {
+					client_id: process.env.REACT_APP_TWITCH_KEY,
+					client_secret: process.env.REACT_APP_CLIENT_SECRET,
+					code: this.props.code,
+					grant_type: 'authorization_code',
+					redirect_uri: 'http://localhost:3000/record/'
+			}})
+				.then(res => Axios.get('https://api.twitch.tv/helix/users?', {headers: {'Client-ID': process.env.REACT_APP_TWITCH_KEY, 'Authorization': 'Bearer ' + res.data.access_token}})
+				.then(user => {
+					let userData = user.data.data[0];
+					console.log(userData)
+					let tempUser = {
+						login: userData.display_name,
+						id: userData.id,
+						image: userData.profile_image_url
+					}
+					console.log(tempUser)
+					this.setState({
+						twitchInfo: {...this.state.twitchInfo, ...tempUser}
+					})
+				}))
+			.catch(err => err.response)
+		}
 		if(!this.props.history.location.loggedIn){
 			this.props.history.push('/')
 		}
@@ -104,6 +134,7 @@ class Recorder extends Component {
     }
 
 	render() { 
+		let twitchUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=" + process.env.REACT_APP_TWITCH_KEY + "&redirect_uri=http://localhost:3000/record/&scope=user_read"
 		if(!this.state.loaded) {
 			return null
 		} else {
@@ -115,28 +146,22 @@ class Recorder extends Component {
 						onClick={() => {console.log("hello")}}/>
 					</Grid.Row>
 					<Grid.Row>
-						{this.state.userName ? <h1 style={{color: "white", fontWeight: "bold", marginTop: 20}}>Welcome {this.state.userName}!</h1> : null}
+						{this.state.userName ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", marginTop: 20}}>Welcome {this.state.userName}!</h1> : null}
 					</Grid.Row>
-					<Grid.Row style={{marginTop: 100, marginBottom: 150}}>
-						<Popup
-							trigger = {
-								<Button onMouseDown={e => e.preventDefault()} animated color="teal">
-									<Button.Content visible><Icon name='user'/></Button.Content>
-									<Button.Content hidden>UID</Button.Content>
-								</Button>
-							}
-							on='click'
-							pinned
-							content={this.props.history.location.uid}
-							basic
-						/>
-						{this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 240}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
+					<Grid.Row>
+						{this.state.twitchInfo.id ? <img className="twitch-image" src={this.state.twitchInfo.image}/>: null}
+					</Grid.Row>
+					<Grid.Row style={{marginTop: 100}}>
+						<a href={twitchUrl}><Button style={{width: 300}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>
+					</Grid.Row>
+					<Grid.Row style={{marginBottom: 120}}>
+						{this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='window close' />
 							</Button.Content>
 						</Button>) :
-						(<Button onMouseDown={e => e.preventDefault()} style={{width: 240}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
+						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
 							<Button.Content visible>Start Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='video camera' />
@@ -158,3 +183,16 @@ class Recorder extends Component {
 }
  
 export default Recorder;
+
+/*<Popup
+							trigger = {
+								<Button onMouseDown={e => e.preventDefault()} animated color="teal">
+									<Button.Content visible><Icon name='user'/></Button.Content>
+									<Button.Content hidden>UID</Button.Content>
+								</Button>
+							}
+							on='click'
+							pinned
+							content={this.props.history.location.uid}
+							basic
+						/>*/ 
