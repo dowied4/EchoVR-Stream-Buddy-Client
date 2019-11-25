@@ -33,6 +33,17 @@ class Signin extends Component {
 		}
 	}
 
+	componentDidUpdate(prevProps, prevState){
+		if(prevProps.loggedIn !== this.props.loggedIn){
+			if(this.props.loggedIn){
+				let user = this.props.user;
+				this.props.history.push({
+					pathname: '/record',
+					uid: user.uid
+				})
+			}}
+	}
+
 	handleChange = e => {
 		const name = e.target.name;
 		const value = e.target.value;
@@ -54,7 +65,6 @@ class Signin extends Component {
 			//On successful login it pushes to next screen
 			this.props.history.push({
 				pathname: '/record',
-				loggedIn: true,
 				uid: auth.user.uid
 			})
 		})

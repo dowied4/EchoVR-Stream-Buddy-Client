@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Button, Icon, Popup} from 'semantic-ui-react';
+import { Grid, Button, Icon, Message} from 'semantic-ui-react';
 import Axios from 'axios';
 require("firebase/firestore");
 
@@ -19,10 +19,24 @@ class Recorder extends Component {
 		 this.startRecording = this.startRecording.bind(this);
 		 this.stopRecording = this.stopRecording.bind(this);
 		 this.getFireBaseMatch = this.getFireBaseMatch.bind(this);
+		 this.getTwitchInfo = this.getTwitchInfo.bind(this);
 		 this.db = null
 	}
 
 	componentDidMount(){
+		
+		if(!this.props.loggedIn){
+			this.props.history.push('/')
+		}
+		this.db = this.props.fb.firestore();
+		if (this.props.history.location.uid){
+			this.setState({
+				loaded: true
+			}, this.getTwitchInfo())
+		}
+	}
+
+	getTwitchInfo(){
 		if(this.props.code){
 			Axios.post('https://id.twitch.tv/oauth2/token?',null,
 			{	params: {
@@ -32,10 +46,9 @@ class Recorder extends Component {
 					grant_type: 'authorization_code',
 					redirect_uri: 'http://localhost:3000/record/'
 			}})
-				.then(res => Axios.get('https://api.twitch.tv/helix/users?', {headers: {'Client-ID': process.env.REACT_APP_TWITCH_KEY, 'Authorization': 'Bearer ' + res.data.access_token}})
+			.then(res => Axios.get('https://api.twitch.tv/helix/users?', {headers: {'Client-ID': process.env.REACT_APP_TWITCH_KEY, 'Authorization': 'Bearer ' + res.data.access_token}})
 				.then(user => {
 					let userData = user.data.data[0];
-					console.log(userData)
 					let tempUser = {
 						login: userData.display_name,
 						id: userData.id,
@@ -45,17 +58,8 @@ class Recorder extends Component {
 					this.setState({
 						twitchInfo: {...this.state.twitchInfo, ...tempUser}
 					})
-				}))
-			.catch(err => err.response)
-		}
-		if(!this.props.history.location.loggedIn){
-			this.props.history.push('/')
-		}
-		this.db = this.props.fb.firestore();
-		if (this.props.history.location.uid){
-			this.setState({
-				loaded: true
-			}, this.getFireBaseMatch())
+			}))
+			.catch(err => console.log(err.response))
 		}
 	}
 
@@ -83,6 +87,12 @@ class Recorder extends Component {
 				// console.log(this.state.match)
 			}
 		}
+		if(prevProps.loggedIn !== this.props.loggedIn){
+			if(!this.props.loggedIn){
+				this.props.history.push({
+					pathname: '/'
+				})
+			}}
 	}
 
 	logout(){
@@ -146,16 +156,14 @@ class Recorder extends Component {
 						onClick={() => {console.log("hello")}}/>
 					</Grid.Row>
 					<Grid.Row>
-						{this.state.userName ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", marginTop: 20}}>Welcome {this.state.userName}!</h1> : null}
+						{this.state.twitchInfo.login ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", top: 20}}>Welcome {this.state.twitchInfo.login}!</h1> : <Message info style={{position: "absolute", top: 120, width: 400}}>To be able to use EchoVR Stream Buddy Extension we will need you to link your twitch account.</Message>}
 					</Grid.Row>
 					<Grid.Row>
 						{this.state.twitchInfo.id ? <img className="twitch-image" src={this.state.twitchInfo.image}/>: null}
 					</Grid.Row>
-					<Grid.Row style={{marginTop: 100}}>
-						<a href={twitchUrl}><Button style={{width: 300}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>
-					</Grid.Row>
-					<Grid.Row style={{marginBottom: 120}}>
-						{this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
+					<Grid.Row>
+						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300, marginTop: 150}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
+						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='window close' />
@@ -168,20 +176,17 @@ class Recorder extends Component {
 							</Button.Content>
 						</Button>)}
 					</Grid.Row>
-					<Grid.Row>
-						<Button onMouseDown={e => e.preventDefault()} animated="fade" style={{width: 300}} onClick={this.logout}>
-							<Button.Content visible>Logout</Button.Content>
-							<Button.Content hidden>
-								<Icon name='sign-out'/>
-							</Button.Content>
-						</Button>
-					</Grid.Row>
+					<Button onMouseDown={e => e.preventDefault()} animated="fade" style={{width: 300, position: "absolute", bottom: 40}} onClick={this.logout}>
+						<Button.Content visible>Logout</Button.Content>
+						<Button.Content hidden>
+							<Icon name='sign-out'/>
+						</Button.Content>
+					</Button>
 				</Grid>
 			);
 		}
 	}
 }
- 
 export default Recorder;
 
 /*<Popup

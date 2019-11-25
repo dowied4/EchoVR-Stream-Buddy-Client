@@ -44,3 +44,8 @@ body {
   z-index: 10 !important;
   transform: scale(0.4) 
 }
+
+.twitch-image{
+  transform: scale(0.5);
+
+}
