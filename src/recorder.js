@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Button, Icon, Message} from 'semantic-ui-react';
+import { Grid, Button, Icon, Message, Segment, Dimmer, Loader} from 'semantic-ui-react';
 import Axios from 'axios';
 require("firebase/firestore");
 
@@ -13,18 +13,19 @@ class Recorder extends Component {
 				login: null,
 				id: null,
 				image: null,
-			}
+			},
+			twitchLoaded: false
 		 }
 		 this.logout = this.logout.bind(this);
 		 this.startRecording = this.startRecording.bind(this);
 		 this.stopRecording = this.stopRecording.bind(this);
 		 this.getFireBaseMatch = this.getFireBaseMatch.bind(this);
+		 this.checkTwitch = this.checkTwitch.bind(this);
 		 this.getTwitchInfo = this.getTwitchInfo.bind(this);
 		 this.db = null
 	}
 
 	componentDidMount(){
-		
 		if(!this.props.loggedIn){
 			this.props.history.push('/')
 		}
@@ -32,8 +33,31 @@ class Recorder extends Component {
 		if (this.props.history.location.uid){
 			this.setState({
 				loaded: true
-			}, this.getTwitchInfo())
+			}, this.checkTwitch())
 		}
+	}
+
+	checkTwitch(){
+		this.db.collection('users').doc(this.props.history.location.uid).get()
+		.then((user) => {
+			console.log(user)
+			if (!user.exists) {
+				this.getTwitchInfo()
+			} else {
+				let tempUser = {
+					login: user.data().login,
+					id: user.data().id,
+					image: user.data().image
+				}
+				this.setState({
+					twitchInfo: {...this.state.twitchInfo, ...tempUser},
+					twitchLoaded: true
+				})
+			}
+		})
+		.catch((err) => {
+			console.log(err)
+		})
 	}
 
 	getTwitchInfo(){
@@ -54,9 +78,11 @@ class Recorder extends Component {
 						id: userData.id,
 						image: userData.profile_image_url
 					}
+					this.db.collection('users').doc(this.props.history.location.uid).set(tempUser)
 					console.log(tempUser)
 					this.setState({
-						twitchInfo: {...this.state.twitchInfo, ...tempUser}
+						twitchInfo: {...this.state.twitchInfo, ...tempUser},
+						twitchLoaded: true
 					})
 			}))
 			.catch(err => console.log(err.response))
@@ -66,7 +92,7 @@ class Recorder extends Component {
 	componentDidUpdate(prevProps, prevState){
 		if (this.state.match && (prevState.recording !== this.state.recording)) {
 			console.log("switch")
-			this.db.collection('matchsnaps').doc(this.props.history.location.uid).set(this.state.match)
+			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match)
 				.then(() => {
 					console.log("Successfully stored")
 				})
@@ -77,7 +103,7 @@ class Recorder extends Component {
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
 			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
-				this.db.collection('matchsnaps').doc(this.props.history.location.uid).set(this.state.match)
+				this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match)
 				.then(() => {
 					console.log("Successfully stored")
 				})
@@ -101,6 +127,7 @@ class Recorder extends Component {
 	}
 
 	startRecording(){
+		this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: true}, { merge: true })
 		this.setState({
 			recording: true
 		}, () => {
@@ -109,7 +136,7 @@ class Recorder extends Component {
 	}
 
 	getFireBaseMatch(){
-		this.db.collection('matchsnaps').doc(this.props.history.location.uid).get().then(snapShot => {
+		this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).get().then(snapShot => {
 			this.setState({
 				userName: snapShot.data().client_name
 			})
@@ -121,6 +148,7 @@ class Recorder extends Component {
 	}
 
 	stopRecording(){
+		this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
 		this.setState({
 			recording: false
 		}, () => {
@@ -140,13 +168,28 @@ class Recorder extends Component {
 	}
 
 	componentWillUnmount() {
-        clearInterval(this.interval)
+		clearInterval(this.interval)
+		if(this.state.twitchInfo.id){
+			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+		}
+		
     }
 
 	render() { 
 		let twitchUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=" + process.env.REACT_APP_TWITCH_KEY + "&redirect_uri=http://localhost:3000/record/&scope=user_read"
-		if(!this.state.loaded) {
-			return null
+		if(!this.state.twitchLoaded) {
+			return (
+				<Grid textAlign={'center'} verticalAlign={'middle'}>
+					<Grid.Row className="titlebar-window">
+						<h5 style={{top: 0, color: "white"}}>EchoVR Stream Buddy</h5>
+						<Button className="titlebar-close-button" circular size={"mini"} icon="close"
+						onClick={() => {console.log("hello")}}/>
+					</Grid.Row>
+					<Dimmer inline='center' active>
+						<Loader content='Loading' />
+					</Dimmer>
+				</Grid>
+			);
 		} else {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
