@@ -31,6 +31,11 @@ class Recorder extends Component {
 		}
 		this.db = this.props.fb.firestore();
 		if (this.props.history.location.uid){
+			window.addEventListener('beforeunload', (e) => {
+				e.preventDefault();
+				e.returnValue = '';
+				this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+			})
 			this.setState({
 				loaded: true
 			}, this.checkTwitch())
@@ -92,7 +97,7 @@ class Recorder extends Component {
 	componentDidUpdate(prevProps, prevState){
 		if (this.state.match && (prevState.recording !== this.state.recording)) {
 			console.log("switch")
-			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match)
+			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
 				})
@@ -103,7 +108,7 @@ class Recorder extends Component {
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
 			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
-				this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match)
+				this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
 				})
