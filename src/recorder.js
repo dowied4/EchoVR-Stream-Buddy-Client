@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Button, Icon, Message, Segment, Dimmer, Loader} from 'semantic-ui-react';
+import { Grid, Button, Icon, Message, Label, Dimmer, Loader, Dropdown} from 'semantic-ui-react';
 import Axios from 'axios';
 require("firebase/firestore");
 
@@ -9,19 +9,25 @@ class Recorder extends Component {
 		this.state = {
 			loaded: false,
 			recording: false,
+			recordId: null,
 			twitchInfo: {
 				login: null,
 				id: null,
 				image: null,
 			},
-			twitchLoaded: false
+			twitchLoaded: false,
+			recordOptions: {
+				verified: false,
+				options: []
+			}
 		 }
 		 this.logout = this.logout.bind(this);
 		 this.startRecording = this.startRecording.bind(this);
 		 this.stopRecording = this.stopRecording.bind(this);
-		 this.getFireBaseMatch = this.getFireBaseMatch.bind(this);
+		//  this.getFireBaseMatch = this.getFireBaseMatch.bind(this);
 		 this.checkTwitch = this.checkTwitch.bind(this);
 		 this.getTwitchInfo = this.getTwitchInfo.bind(this);
+		 this.onDropDownChange = this.onDropDownChange.bind(this);
 		 this.db = null
 	}
 
@@ -31,16 +37,37 @@ class Recorder extends Component {
 		}
 		this.db = this.props.fb.firestore();
 		if (this.props.history.location.uid){
-			window.addEventListener('beforeunload', (e) => {
-				e.preventDefault();
-				e.returnValue = '';
-				this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+			// window.addEventListener('beforeunload', (e) => {
+			// 	e.preventDefault();
+			// 	e.returnValue = '';
+			// 	this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+			// })
+			this.db.collection('users').doc(this.props.history.location.uid).get()
+			.then( res => {
+				console.log(res.data().verified)
+				if (res.data().verified) {
+					this.setState({recordOptions: {
+						verified: true,
+						options: res.data().verified
+					}})
+				} else {
+					console.log('doesnt exist')
+				}
 			})
+			.catch(err => console.log(err))
 			this.setState({
 				loaded: true
 			}, this.checkTwitch())
 		}
 	}
+
+	onDropDownChange = (e, data) => {
+        console.log(data.value);
+        this.setState({
+            recordId: data.value
+        });
+
+    }
 
 	checkTwitch(){
 		this.db.collection('users').doc(this.props.history.location.uid).get()
@@ -55,6 +82,7 @@ class Recorder extends Component {
 					image: user.data().image
 				}
 				this.setState({
+					recordId: user.data().id,
 					twitchInfo: {...this.state.twitchInfo, ...tempUser},
 					twitchLoaded: true
 				})
@@ -86,6 +114,7 @@ class Recorder extends Component {
 					this.db.collection('users').doc(this.props.history.location.uid).set(tempUser)
 					console.log(tempUser)
 					this.setState({
+						recordId: tempUser.id,
 						twitchInfo: {...this.state.twitchInfo, ...tempUser},
 						twitchLoaded: true
 					})
@@ -97,7 +126,7 @@ class Recorder extends Component {
 	componentDidUpdate(prevProps, prevState){
 		if (this.state.match && (prevState.recording !== this.state.recording)) {
 			console.log("switch")
-			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match, { merge: true })
+			this.db.collection('matchsnaps').doc(this.state.recordId).set(this.state.match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
 				})
@@ -108,7 +137,7 @@ class Recorder extends Component {
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
 			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
-				this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set(this.state.match, { merge: true })
+				this.db.collection('matchsnaps').doc(this.state.recordId).set(this.state.match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
 				})
@@ -132,7 +161,7 @@ class Recorder extends Component {
 	}
 
 	startRecording(){
-		this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: true}, { merge: true })
+		this.db.collection('matchsnaps').doc(this.state.recordId).set({active: true}, { merge: true })
 		this.setState({
 			recording: true
 		}, () => {
@@ -140,20 +169,20 @@ class Recorder extends Component {
 		})
 	}
 
-	getFireBaseMatch(){
-		this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).get().then(snapShot => {
-			this.setState({
-				userName: snapShot.data().client_name
-			})
-			// console.log(snapShot.data())
-		})
-		.catch((err) => {
-			console.warn(err)
-		})
-	}
+	// getFireBaseMatch(){
+	// 	this.db.collection('matchsnaps').doc(this.state.recordId).get().then(snapShot => {
+	// 		this.setState({
+	// 			userName: snapShot.data().client_name
+	// 		})
+	// 		// console.log(snapShot.data())
+	// 	})
+	// 	.catch((err) => {
+	// 		console.warn(err)
+	// 	})
+	// }
 
 	stopRecording(){
-		this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+		this.db.collection('matchsnaps').doc(this.state.recordId).set({active: false}, { merge: true })
 		this.setState({
 			recording: false
 		}, () => {
@@ -175,13 +204,30 @@ class Recorder extends Component {
 	componentWillUnmount() {
 		clearInterval(this.interval)
 		if(this.state.twitchInfo.id){
-			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+			this.db.collection('matchsnaps').doc(this.state.recordId).set({active: false}, { merge: true })
 		}
-		
     }
 
-	render() { 
+	render() {
 		let twitchUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=" + process.env.REACT_APP_TWITCH_KEY + "&redirect_uri=http://localhost:3000/record/&scope=user_read"
+		const extraOptions = [];
+		if(this.state.recordOptions.verified){
+			let tempObj;
+			tempObj = {
+				key: this.state.twitchInfo.login,
+				text: this.state.twitchInfo.login,
+				value: this.state.twitchInfo.id
+			}
+			extraOptions.push(tempObj)
+			this.state.recordOptions.options.map((value, index) => {
+				tempObj = {
+					key: value.name,
+					text: value.name,
+					value: value.id
+				}
+				extraOptions.push(tempObj)
+			})
+		}
 		if(!this.state.twitchLoaded) {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
@@ -209,15 +255,16 @@ class Recorder extends Component {
 					<Grid.Row>
 						{this.state.twitchInfo.id ? <img className="twitch-image" src={this.state.twitchInfo.image}/>: null}
 					</Grid.Row>
+					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 30}} selection options={extraOptions}/></Grid.Row> : null}
 					<Grid.Row>
-						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300, marginTop: 150}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
-						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
+						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
+						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 5}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='window close' />
 							</Button.Content>
 						</Button>) :
-						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
+						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 5}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
 							<Button.Content visible>Start Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='video camera' />
