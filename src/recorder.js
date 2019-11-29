@@ -42,19 +42,6 @@ class Recorder extends Component {
 			// 	e.returnValue = '';
 			// 	this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
 			// })
-			this.db.collection('users').doc(this.props.history.location.uid).get()
-			.then( res => {
-				console.log(res.data().verified)
-				if (res.data().verified) {
-					this.setState({recordOptions: {
-						verified: true,
-						options: res.data().verified
-					}})
-				} else {
-					console.log('doesnt exist')
-				}
-			})
-			.catch(err => console.log(err))
 			this.setState({
 				loaded: true
 			}, this.checkTwitch())
@@ -86,6 +73,14 @@ class Recorder extends Component {
 					twitchInfo: {...this.state.twitchInfo, ...tempUser},
 					twitchLoaded: true
 				})
+				if (user.data().verified) {
+					this.setState({recordOptions: {
+						verified: true,
+						options: user.data().verified
+					}})
+				} else {
+					console.log('doesnt exist')
+				}
 			}
 		})
 		.catch((err) => {
