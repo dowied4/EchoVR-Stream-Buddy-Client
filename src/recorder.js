@@ -32,6 +32,12 @@ class Recorder extends Component {
 	}
 
 	componentDidMount(){
+		this.setState({
+			loaded: true
+		})
+	}
+
+	componentWillMount(){
 		if(!this.props.loggedIn){
 			this.props.history.push('/')
 		}
@@ -223,7 +229,7 @@ class Recorder extends Component {
 				extraOptions.push(tempObj)
 			})
 		}
-		if(!this.state.twitchLoaded) {
+		if(!this.state.twitchLoaded && this.state.loaded) {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
 					<Grid.Row className="titlebar-window">
