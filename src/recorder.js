@@ -19,7 +19,8 @@ class Recorder extends Component {
 			recordOptions: {
 				verified: false,
 				options: []
-			}
+			},
+			gettingTwitch: false
 		 }
 		 this.logout = this.logout.bind(this);
 		 this.startRecording = this.startRecording.bind(this);
@@ -67,7 +68,10 @@ class Recorder extends Component {
 		.then((user) => {
 			console.log(user)
 			if (!user.exists) {
-				this.getTwitchInfo()
+				this.getTwitchInfo();
+				this.setState({
+					gettingTwitch: true
+				})
 			} else {
 				let tempUser = {
 					login: user.data().login,
@@ -229,7 +233,7 @@ class Recorder extends Component {
 				extraOptions.push(tempObj)
 			})
 		}
-		if(!this.state.twitchLoaded && this.state.loaded) {
+		if(!this.state.loaded || (!this.state.twitchLoaded && !this.state.gettingTwitch)) {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
 					<Grid.Row className="titlebar-window">
@@ -258,7 +262,7 @@ class Recorder extends Component {
 					</Grid.Row>
 					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 30}} selection options={extraOptions}/></Grid.Row> : null}
 					<Grid.Row>
-						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
+						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
 						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 5}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
