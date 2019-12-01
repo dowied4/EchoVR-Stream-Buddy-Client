@@ -39,11 +39,6 @@ class Recorder extends Component {
 		}
 		this.db = this.props.fb.firestore();
 		if (this.props.history.location.uid){
-			// window.addEventListener('beforeunload', (e) => {
-			// 	e.preventDefault();
-			// 	e.returnValue = '';
-			// 	this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
-			// })
 			this.setState({
 				loaded: true
 			}, this.checkTwitch())
@@ -224,11 +219,11 @@ class Recorder extends Component {
 			snapString = "No Match Data Sent Yet!"
 		}
 		if (!this.state.recording) {
-			return <Popup header="Not Recording"  trigger={<Label circular empty color="red" style={{position: "absolute", top: 51, left: 110, zIndex: 10}}/>} position='bottom center'/>
+			return <Popup header="Not Recording"  trigger={<Label circular empty color="red" style={{position: "absolute", top: 310, left: 220, zIndex: 10}}/>} position='left center'/>
 		} else if (this.state.recording && this.state.validData) {
-			return <Popup header="Last Snapshot: " content={snapString}  trigger={<Label circular empty color="green" style={{position: "absolute", top: 51, left: 110, zIndex: 10}}/>} position='bottom center'/>
+			return <Popup header="Last Snapshot: " content={snapString}  trigger={<Label circular empty color="green" style={{position: "absolute", top: 310, left: 220, zIndex: 10}}/>} position='left center'/>
 		} else {
-			return <Popup header="No Match Found" trigger={<Label circular empty color="yellow" style={{position: "absolute", top: 51, left: 110, zIndex: 10}}/>} position='bottom center'/>
+			return <Popup header="No Match Found" content={"Since: " + snapString} trigger={<Label circular empty color="yellow" style={{position: "absolute", top: 310, left: 220, zIndex: 10}}/>} position='left center'/>
 		}
 	}
 
@@ -264,11 +259,12 @@ class Recorder extends Component {
 		if(!this.state.loaded || (!this.state.twitchLoaded && !this.state.gettingTwitch)) {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
-					<Grid.Row className="titlebar-window">
-						<h5 style={{top: 0, color: "white"}}>EchoVR Stream Buddy</h5>
-						<Button className="titlebar-close-button" circular size={"mini"} icon="close"
-						onClick={() => {console.log("hello")}}/>
-					</Grid.Row>
+					<div className="titlebar-window">
+						<h5 className="title">EchoVR Stream Buddy</h5>
+					</div>
+					<div className='titlebar-close-button-div'>
+						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {window.close()}}/>
+					</div>
 					<Dimmer inline='center' active>
 						<Loader content='Loading' />
 					</Dimmer>
@@ -277,37 +273,42 @@ class Recorder extends Component {
 		} else {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
-					{this.state.validData ? <p style={{fontSize: "75%",fontStyle: "italic",color: 'white', position: 'absolute', bottom: 0, left: 0}}>Match: {this.state.match.sessionid}</p> : null}
-					<Grid.Row className="titlebar-window">
-						<h5 style={{top: 0, color: "white"}}>EchoVR Stream Buddy</h5>
-						<Button className="titlebar-close-button" circular size={"mini"} icon="close"
-						onClick={() => {console.log("hello")}}/>
-					</Grid.Row>
+					<div className="titlebar-window">
+						<h5 className="title">EchoVR Stream Buddy</h5>
+					</div>
+					<div className='titlebar-close-button-div'>
+						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {
+							this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+							window.close()
+						}}/>
+					</div>
 					<Grid.Row>
 						{this.state.twitchInfo.login ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", top: 20}}>Welcome {this.state.twitchInfo.login}!</h1> : <Message info style={{position: "absolute", top: 120, width: 400}}>To be able to use EchoVR Stream Buddy Extension we will need you to link your twitch account.</Message>}
 					</Grid.Row>
-					<h3 style={{position: "absolute",top: 20,left: 30, color: "white", fontWeight: "bold"}}>Status:</h3>
 					{this.statusBar()}
+					{this.state.validData && this.state.recording ? <p style={{fontSize: "75%",color: 'white', position: 'absolute', top: 310, left: 245}}>{this.state.match.sessionid}</p> : 
+					<p style={{fontSize: "75%",color: 'white', position: 'absolute', top: 310, left: 320}}>{!this.state.recording ? "Not Recording" : "No Match Data"}</p>}
 					<Grid.Row>
 						{this.state.twitchInfo.id ? <img className="twitch-image" src={this.state.twitchInfo.image}/>: null}
 					</Grid.Row>
-					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 40}} selection options={extraOptions}/></Grid.Row> : null}
+					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 20}} selection options={extraOptions}/></Grid.Row> : null}
 					<Grid.Row>
+						
 						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
-						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 15}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
+						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: -15}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='window close' />
 							</Button.Content>
 						</Button>) :
-						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 15}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
+						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: -15}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
 							<Button.Content visible>Start Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='video camera' />
 							</Button.Content>
 						</Button>)}
 					</Grid.Row>
-					<Button onMouseDown={e => e.preventDefault()} animated="fade" style={{width: 300, position: "absolute", bottom: 50}} onClick={this.logout}>
+					<Button onMouseDown={e => e.preventDefault()} animated="fade" style={{width: 300, position: "absolute", bottom: 25}} onClick={this.logout}>
 						<Button.Content visible>Logout</Button.Content>
 						<Button.Content hidden>
 							<Icon name='sign-out'/>
