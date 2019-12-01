@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Button, Icon, Message, Label, Dimmer, Loader, Dropdown} from 'semantic-ui-react';
+import { Grid, Button, Icon,Label, Message, Dimmer, Loader, Dropdown, Popup} from 'semantic-ui-react';
 import Axios from 'axios';
 require("firebase/firestore");
 
@@ -20,7 +20,8 @@ class Recorder extends Component {
 				verified: false,
 				options: []
 			},
-			gettingTwitch: false
+			gettingTwitch: false,
+			diffTime: new Date()
 		 }
 		 this.logout = this.logout.bind(this);
 		 this.startRecording = this.startRecording.bind(this);
@@ -33,12 +34,6 @@ class Recorder extends Component {
 	}
 
 	componentDidMount(){
-		this.setState({
-			loaded: true
-		})
-	}
-
-	componentWillMount(){
 		if(!this.props.loggedIn){
 			this.props.history.push('/')
 		}
@@ -66,7 +61,6 @@ class Recorder extends Component {
 	checkTwitch(){
 		this.db.collection('users').doc(this.props.history.location.uid).get()
 		.then((user) => {
-			console.log(user)
 			if (!user.exists) {
 				this.getTwitchInfo();
 				this.setState({
@@ -84,10 +78,16 @@ class Recorder extends Component {
 					twitchLoaded: true
 				})
 				if (user.data().verified) {
-					this.setState({recordOptions: {
-						verified: true,
-						options: user.data().verified
-					}})
+					//made it this way so we could access channels for different subcategories like maybe VRL
+					this.db.collection('channels').doc('VRML').get()
+					.then((channels) => {
+							this.setState({recordOptions: {
+								verified: true,
+								options: channels.data().channels
+							}})
+						}
+					)
+					.catch(err=> console.warn(err))
 				} else {
 					console.log('doesnt exist')
 				}
@@ -117,7 +117,6 @@ class Recorder extends Component {
 						image: userData.profile_image_url
 					}
 					this.db.collection('users').doc(this.props.history.location.uid).set(tempUser)
-					console.log(tempUser)
 					this.setState({
 						recordId: tempUser.id,
 						twitchInfo: {...this.state.twitchInfo, ...tempUser},
@@ -129,22 +128,16 @@ class Recorder extends Component {
 	}
 
 	componentDidUpdate(prevProps, prevState){
-		if (this.state.match && (prevState.recording !== this.state.recording)) {
-			console.log("switch")
-			this.db.collection('matchsnaps').doc(this.state.recordId).set(this.state.match, { merge: true })
-				.then(() => {
-					console.log("Successfully stored")
-				})
-				.catch((err) => {
-					console.warn(err)
-				})
-		}
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
 			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
 				this.db.collection('matchsnaps').doc(this.state.recordId).set(this.state.match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
+					let today = new Date();
+					this.setState({
+						diffTime: today
+					})
 				})
 				.catch((err) => {
 					console.warn(err)
@@ -165,26 +158,40 @@ class Recorder extends Component {
 		this.props.history.push('/');
 	}
 
+	getMatch(first){
+		Axios.get('/session')
+		.then((result => {
+			if (first) {
+				clearInterval(this.interval)
+				this.db.collection('matchsnaps').doc(this.state.recordId).set(result.data, { merge: true })
+				.then(() => {
+					console.log("Successfully stored")
+					let today = new Date();
+					this.setState({
+						diffTime: today
+					})
+				})
+				.catch(err => console.error(err))
+				this.interval = setInterval(() => this.getMatch(false), 1000)
+			}
+			this.setState({match: result.data, validData: true})
+		}))
+		.catch((err) => {
+			console.warn(err.response)
+			clearInterval(this.interval)
+			this.interval = setInterval(() => this.getMatch(true), 1000)
+			this.setState({validData: false})
+		})
+	}
+
 	startRecording(){
 		this.db.collection('matchsnaps').doc(this.state.recordId).set({active: true}, { merge: true })
 		this.setState({
 			recording: true
 		}, () => {
-			this.interval = setInterval(() => this.getMatch(), 1000);
+			this.getMatch(true)
 		})
 	}
-
-	// getFireBaseMatch(){
-	// 	this.db.collection('matchsnaps').doc(this.state.recordId).get().then(snapShot => {
-	// 		this.setState({
-	// 			userName: snapShot.data().client_name
-	// 		})
-	// 		// console.log(snapShot.data())
-	// 	})
-	// 	.catch((err) => {
-	// 		console.warn(err)
-	// 	})
-	// }
 
 	stopRecording(){
 		this.db.collection('matchsnaps').doc(this.state.recordId).set({active: false}, { merge: true })
@@ -195,16 +202,37 @@ class Recorder extends Component {
 		})
 	}
 
-	getMatch(){
-		Axios.get('/session')
-		.then((result => {
-			console.log(result.data.game_status)
-			this.setState({match: result.data})
-		}))
-		.catch((err) => {
-			console.warn(err.response)
-		})
+
+	statusBar(){
+		var snapString;
+		let today = new Date();
+		let timeGap =  (today.getTime() - this.state.diffTime.getTime())/(60000);
+		if (timeGap >= 2){
+			snapString = Math.ceil(timeGap) + " Minutes Ago"
+		} else if (timeGap < 1) {
+			let time = Math.ceil(timeGap * 60)
+			if (time > 1) {
+				snapString = Math.ceil(timeGap * 60) + " Seconds Ago"
+			} else {
+				snapString = "1 Second Ago"
+			}
+			
+		} else {
+			snapString = "1 Minute Ago"
+		}
+		if(!timeGap){
+			snapString = "No Match Data Sent Yet!"
+		}
+		if (!this.state.recording) {
+			return <Popup header="Not Recording"  trigger={<Label circular empty color="red" style={{position: "absolute", top: 51, left: 110, zIndex: 10}}/>} position='bottom center'/>
+		} else if (this.state.recording && this.state.validData) {
+			return <Popup header="Last Snapshot: " content={snapString}  trigger={<Label circular empty color="green" style={{position: "absolute", top: 51, left: 110, zIndex: 10}}/>} position='bottom center'/>
+		} else {
+			return <Popup header="No Match Found" trigger={<Label circular empty color="yellow" style={{position: "absolute", top: 51, left: 110, zIndex: 10}}/>} position='bottom center'/>
+		}
 	}
+
+	
 
 	componentWillUnmount() {
 		clearInterval(this.interval)
@@ -249,6 +277,7 @@ class Recorder extends Component {
 		} else {
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
+					{this.state.validData ? <p style={{fontSize: "75%",fontStyle: "italic",color: 'white', position: 'absolute', bottom: 0, left: 0}}>Match: {this.state.match.sessionid}</p> : null}
 					<Grid.Row className="titlebar-window">
 						<h5 style={{top: 0, color: "white"}}>EchoVR Stream Buddy</h5>
 						<Button className="titlebar-close-button" circular size={"mini"} icon="close"
@@ -257,26 +286,28 @@ class Recorder extends Component {
 					<Grid.Row>
 						{this.state.twitchInfo.login ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", top: 20}}>Welcome {this.state.twitchInfo.login}!</h1> : <Message info style={{position: "absolute", top: 120, width: 400}}>To be able to use EchoVR Stream Buddy Extension we will need you to link your twitch account.</Message>}
 					</Grid.Row>
+					<h3 style={{position: "absolute",top: 20,left: 30, color: "white", fontWeight: "bold"}}>Status:</h3>
+					{this.statusBar()}
 					<Grid.Row>
 						{this.state.twitchInfo.id ? <img className="twitch-image" src={this.state.twitchInfo.image}/>: null}
 					</Grid.Row>
-					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 30}} selection options={extraOptions}/></Grid.Row> : null}
+					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 40}} selection options={extraOptions}/></Grid.Row> : null}
 					<Grid.Row>
 						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
-						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 5}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
+						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 15}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='window close' />
 							</Button.Content>
 						</Button>) :
-						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 5}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
+						(<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: 15}} animated='vertical' positive size={"large"} onClick={this.startRecording}>
 							<Button.Content visible>Start Recording</Button.Content>
 							<Button.Content hidden>
 								<Icon name='video camera' />
 							</Button.Content>
 						</Button>)}
 					</Grid.Row>
-					<Button onMouseDown={e => e.preventDefault()} animated="fade" style={{width: 300, position: "absolute", bottom: 40}} onClick={this.logout}>
+					<Button onMouseDown={e => e.preventDefault()} animated="fade" style={{width: 300, position: "absolute", bottom: 50}} onClick={this.logout}>
 						<Button.Content visible>Logout</Button.Content>
 						<Button.Content hidden>
 							<Icon name='sign-out'/>
@@ -288,16 +319,3 @@ class Recorder extends Component {
 	}
 }
 export default Recorder;
-
-/*<Popup
-							trigger = {
-								<Button onMouseDown={e => e.preventDefault()} animated color="teal">
-									<Button.Content visible><Icon name='user'/></Button.Content>
-									<Button.Content hidden>UID</Button.Content>
-								</Button>
-							}
-							on='click'
-							pinned
-							content={this.props.history.location.uid}
-							basic
-						/>*/ 

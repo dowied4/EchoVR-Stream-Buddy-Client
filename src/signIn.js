@@ -85,7 +85,7 @@ class Signin extends Component {
 		//idk if we should have predetermined accounts for streamers but this signup is hear if we want it
 		let passTest = (this.state.password === this.state.confirmPass) && this.state.password !== ''
 		console.log(this.state)
-		let emailTest = (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(this.state.email))
+		let emailTest = (/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(this.state.email))
 		if(emailTest && passTest){
 			console.log("Passwords Match")
 			this.props.fb.auth().createUserWithEmailAndPassword(this.state.email, this.state.password)
