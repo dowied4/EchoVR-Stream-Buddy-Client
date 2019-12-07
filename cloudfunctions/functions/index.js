@@ -9,6 +9,62 @@ const db = admin.firestore();
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 
+
+exports.getMatchData = functions.https.onRequest((req, res) => {
+		res.set('Access-Control-Allow-Origin', '*');
+		if (req.method === 'OPTIONS') {
+			// Send response to OPTIONS requests
+			res.set('Access-Control-Allow-Methods', 'GET');
+			res.set('Access-Control-Allow-Headers', '*');
+			res.set('Access-Control-Max-Age', '3600');
+			res.status(204).send('');
+		  } else {
+			if(req.method !== "GET") {
+			return res.status(500).json({
+				message: "Incorrect endpoint method"
+			});
+			} else {
+			let twitch = req.header('Twitch-ID');
+			if (!twitch) {
+				return res.status(500).json({
+					message: 'No twitch ID was presented'
+				})
+			} else {
+				db.collection('matchsnaps').doc(twitch).get()
+				.then(match => {
+					if(match.exists){
+						console.log(match.data())
+						if(match.data().active){
+							return res.status(200).json({
+								message: "valid res",
+								match: match.data()
+							})
+						} else {
+							return res.status(500).json({
+								message: "Streamer is not active",
+							})
+						}
+						
+					} else {
+						return res.status(500).json({
+							message: "User doesnt have any matches"
+						})
+					}
+					
+				})
+				.catch(err => {
+					console.log(err)
+					return res.status(500).json({
+						message: err
+					})
+				})
+			}
+		}
+		
+		}
+	
+})
+
 exports.sendMatchData = functions.firestore
 .document('matchsnaps/{uid}').onWrite((change, context) => {
 	const match = change.after.data();
