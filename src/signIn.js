@@ -138,15 +138,14 @@ class Signin extends Component {
 		} else  if(!this.state.signingUp){
 			return (
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
-					<Grid.Row className="titlebar-window">
-						<h5 style={{top: 0, color: "white"}}>EchoVR Stream Buddy</h5>
-						<Button
-							className="titlebar-close-button"
-							circular
-							size={"mini"}
-							icon="close"
-							onClick={() => {console.log("y u no wurk")}}/>
-					</Grid.Row>
+					<div className="titlebar-window">
+						<h5 className="title">EchoVR Stream Buddy</h5>
+					</div>
+					<div className='titlebar-close-button-div'>
+						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {
+							window.close()
+						}}/>
+					</div>
 					<Transition visible={this.state.error.status} animation='scale' duration={500}>
 						<Message
 							name='authError'

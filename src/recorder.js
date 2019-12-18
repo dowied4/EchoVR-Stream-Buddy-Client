@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Grid, Button, Icon,Label, Message, Dimmer, Loader, Dropdown, Popup} from 'semantic-ui-react';
+import { Grid, Button, Icon,Label, Message, Dimmer, Loader, Dropdown, Popup, Checkbox} from 'semantic-ui-react';
 import Axios from 'axios';
 require("firebase/firestore");
 
@@ -21,12 +21,12 @@ class Recorder extends Component {
 				options: []
 			},
 			gettingTwitch: false,
+			topChecked: false,
 			diffTime: new Date()
 		 }
 		 this.logout = this.logout.bind(this);
 		 this.startRecording = this.startRecording.bind(this);
 		 this.stopRecording = this.stopRecording.bind(this);
-		//  this.getFireBaseMatch = this.getFireBaseMatch.bind(this);
 		 this.checkTwitch = this.checkTwitch.bind(this);
 		 this.getTwitchInfo = this.getTwitchInfo.bind(this);
 		 this.onDropDownChange = this.onDropDownChange.bind(this);
@@ -67,6 +67,13 @@ class Recorder extends Component {
 					id: user.data().id,
 					image: user.data().image
 				}
+				this.db.collection('matchsnaps').doc(user.data().id).get()
+				.then((match) => {
+					this.setState({
+						topChecked: match.data().top
+					})
+				}
+				)
 				this.setState({
 					recordId: user.data().id,
 					twitchInfo: {...this.state.twitchInfo, ...tempUser},
@@ -123,9 +130,14 @@ class Recorder extends Component {
 	}
 
 	componentDidUpdate(prevProps, prevState){
+		console.log('%c 🦑 prevState: ', 'font-size:20px;background-color: #B03734;color:#fff;', prevState);
+		console.log('%c 🥘 newState: ', 'font-size:20px;background-color: #3F7CFF;color:#fff;', this.state);
+
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
 			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
+				let match = this.state.match
+				match = {...match, ...this.state.topChecked}
 				this.db.collection('matchsnaps').doc(this.state.recordId).set(this.state.match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
@@ -263,7 +275,10 @@ class Recorder extends Component {
 						<h5 className="title">EchoVR Stream Buddy</h5>
 					</div>
 					<div className='titlebar-close-button-div'>
-						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {window.close()}}/>
+						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {
+							window.close()
+							
+						}}/>
 					</div>
 					<Dimmer inline='center' active>
 						<Loader content='Loading' />
@@ -279,12 +294,26 @@ class Recorder extends Component {
 					<div className='titlebar-close-button-div'>
 						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {
 							this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
-							window.close()
+							setTimeout(() =>  {window.close()}, 1000)
 						}}/>
 					</div>
 					<Grid.Row>
 						{this.state.twitchInfo.login ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", top: 20}}>Welcome {this.state.twitchInfo.login}!</h1> : <Message info style={{position: "absolute", top: 120, width: 400}}>To be able to use EchoVR Stream Buddy Extension we will need you to link your twitch account.</Message>}
 					</Grid.Row>
+					<Grid style={{position: "absolute", top: "410px", left: "15px"}}>
+						<Grid.Row columns={2}>
+							<Grid.Column>
+								<h5 style={{color: "white"}}>Use Top Overlay</h5>
+							</Grid.Column>
+							<Grid.Column>
+								<Checkbox checked={this.state.topChecked} onChange={(e, data) => {
+									this.setState({
+										topChecked: data.checked
+									})
+								}} style={{paddingTop: "5px"}}  toggle/>
+							</Grid.Column>
+						</Grid.Row>
+					</Grid>
 					{this.statusBar()}
 					{this.state.validData && this.state.recording ? <p style={{fontSize: "75%",color: 'white', position: 'absolute', top: 310, left: 245}}>{this.state.match.sessionid}</p> : 
 					<p style={{fontSize: "75%",color: 'white', position: 'absolute', top: 310, left: 320}}>{!this.state.recording ? "Not Recording" : "No Match Data"}</p>}
