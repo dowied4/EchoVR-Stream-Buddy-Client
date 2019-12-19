@@ -130,15 +130,17 @@ class Recorder extends Component {
 	}
 
 	componentDidUpdate(prevProps, prevState){
-		console.log('%c 🦑 prevState: ', 'font-size:20px;background-color: #B03734;color:#fff;', prevState);
-		console.log('%c 🥘 newState: ', 'font-size:20px;background-color: #3F7CFF;color:#fff;', this.state);
+		// console.log('%c 🦑 prevState: ', 'font-size:20px;background-color: #B03734;color:#fff;', prevState);
+		// console.log('%c 🥘 newState: ', 'font-size:20px;background-color: #3F7CFF;color:#fff;', this.state);
 
 		if (this.state.match && prevState.match){
 			//We can make these conditions different then game status if we feel that we need to update more often
 			if (this.state.recording && (this.state.match.game_status !== prevState.match.game_status) && this.state.match.game_status !== 'round_start' && this.state.match.game_status !== '') {
 				let match = this.state.match
-				match = {...match, ...this.state.topChecked}
-				this.db.collection('matchsnaps').doc(this.state.recordId).set(this.state.match, { merge: true })
+				match.top = this.state.topChecked
+				console.log('%c 🥞 match: ', 'font-size:20px;background-color: #FFDD4D;color:#fff;', match);
+
+				this.db.collection('matchsnaps').doc(this.state.recordId).set(match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
 					let today = new Date();
@@ -170,7 +172,9 @@ class Recorder extends Component {
 		.then((result => {
 			if (first) {
 				clearInterval(this.interval)
-				this.db.collection('matchsnaps').doc(this.state.recordId).set(result.data, { merge: true })
+				let match = result.data
+				match.top = this.state.topChecked
+				this.db.collection('matchsnaps').doc(this.state.recordId).set(match, { merge: true })
 				.then(() => {
 					console.log("Successfully stored")
 					let today = new Date();
