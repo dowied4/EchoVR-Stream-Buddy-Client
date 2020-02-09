@@ -1,29 +1,40 @@
 {
+  "author": "David Dowie",
   "name": "stream-buddy-client",
   "version": "0.1.0",
   "private": true,
   "main": "public/electron.js",
   "proxy": "http://127.0.0.1",
+  "homepage": ".",
   "dependencies": {
     "axios": "^0.19.0",
-    "concurrently": "^5.0.0",
-    "electron": "^7.1.1",
+    "concurrently": "^5.1.0",
     "electron-is-dev": "^1.1.0",
     "firebase": "^7.3.0",
+    "grpc": "^1.24.2",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.2.0",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^0.88.1",
+    "twitch": "^3.7.1",
+    "twitch-electron-auth-provider": "^3.7.1",
     "wait-on": "^3.3.0"
+  },
+  "devDependencies": {
+    "electron": "^8.0.0",
+    "electron-builder": "^22.3.2"
   },
   "scripts": {
     "electron-dev": "concurrently \"SET BROWSER=none&&npm run start\" \"wait-on http://localhost:3000 && electron .\"",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "postinstall": "electron-builder install-app-deps",
+    "preelectron-pack": "npm run build",
+    "electron-pack": "electron-builder -c.extraMetadata.main=build/electron.js"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -40,7 +51,14 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "electron-builder": "^22.1.0"
+  "build": {
+    "appId": "com.StreamBuddy.app",
+    "files": [
+      "build/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    }
   }
 }
