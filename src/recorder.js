@@ -3,6 +3,7 @@ import { Grid, Button, Icon,Label, Message, Dimmer, Loader, Dropdown, Popup, Che
 import Axios from 'axios';
 require("firebase/firestore");
 
+
 class Recorder extends Component {
 	constructor(props) {
 		super(props);
@@ -30,6 +31,7 @@ class Recorder extends Component {
 		 this.checkTwitch = this.checkTwitch.bind(this);
 		 this.getTwitchInfo = this.getTwitchInfo.bind(this);
 		 this.onDropDownChange = this.onDropDownChange.bind(this);
+		 this.launchTwitchWindow = this.launchTwitchWindow.bind(this);
 		 this.db = null
 	}
 
@@ -99,6 +101,24 @@ class Recorder extends Component {
 			console.log(err)
 		})
 	}
+	launchTwitchWindow(twitchUrl){
+		var authWindow = new window.BrowserWindow({
+			width: 800, 
+			height: 600, 
+			show: false, 
+			'node-integration': true,
+			'web-security': false
+		});
+		var authUrl = twitchUrl
+		authWindow.loadURL(authUrl)
+		authWindow.show();
+		authWindow.webContents.on('will-navigate', (event, newUrl) => {
+			console.log(newUrl)
+		});
+		authWindow.on('closed', () => {
+			authWindow = null;
+		})
+	}
 
 	getTwitchInfo(){
 		if(this.props.code){
@@ -116,7 +136,8 @@ class Recorder extends Component {
 					let tempUser = {
 						login: userData.display_name,
 						id: userData.id,
-						image: userData.profile_image_url
+						image: userData.profile_image_url,
+						verified: false
 					}
 					this.db.collection('users').doc(this.props.history.location.uid).set(tempUser)
 					this.setState({
@@ -128,7 +149,6 @@ class Recorder extends Component {
 			.catch(err => console.log(err.response))
 		}
 	}
-
 	componentDidUpdate(prevProps, prevState){
 		// console.log('%c 🦑 prevState: ', 'font-size:20px;background-color: #B03734;color:#fff;', prevState);
 		// console.log('%c 🥘 newState: ', 'font-size:20px;background-color: #3F7CFF;color:#fff;', this.state);
@@ -163,6 +183,9 @@ class Recorder extends Component {
 	}
 
 	logout(){
+		if (this.state.twitchInfo){
+			this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+		}
 		this.props.fb.auth().signOut();
 		this.props.history.push('/');
 	}
@@ -253,6 +276,7 @@ class Recorder extends Component {
     }
 
 	render() {
+		
 		let twitchUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=" + process.env.REACT_APP_TWITCH_KEY + "&redirect_uri=http://localhost:3000/record/&scope=user_read"
 		const extraOptions = [];
 		if(this.state.recordOptions.verified){
@@ -297,13 +321,16 @@ class Recorder extends Component {
 					</div>
 					<div className='titlebar-close-button-div'>
 						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {
-							this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+							if(this.state.twitchInfo){
+								this.db.collection('matchsnaps').doc(this.state.twitchInfo.id).set({active: false}, { merge: true })
+							}
 							setTimeout(() =>  {window.close()}, 1000)
 						}}/>
 					</div>
 					<Grid.Row>
 						{this.state.twitchInfo.login ? <h1 style={{position: "absolute",color: "white", fontWeight: "bold", top: 20}}>Welcome {this.state.twitchInfo.login}!</h1> : <Message info style={{position: "absolute", top: 120, width: 400}}>To be able to use EchoVR Stream Buddy Extension we will need you to link your twitch account.</Message>}
 					</Grid.Row>
+					{this.state.twitchInfo.login ?
 					<Grid style={{position: "absolute", top: "410px", left: "15px"}}>
 						<Grid.Row columns={2}>
 							<Grid.Column>
@@ -317,8 +344,8 @@ class Recorder extends Component {
 								}} style={{paddingTop: "5px"}}  toggle/>
 							</Grid.Column>
 						</Grid.Row>
-					</Grid>
-					{this.statusBar()}
+					</Grid> : null}
+					{this.state.twitchInfo.login ? this.statusBar() : null}
 					{this.state.validData && this.state.recording ? <p style={{fontSize: "75%",color: 'white', position: 'absolute', top: 310, left: 245}}>{this.state.match.sessionid}</p> : 
 					<p style={{fontSize: "75%",color: 'white', position: 'absolute', top: 310, left: 320}}>{!this.state.recording ? "Not Recording" : "No Match Data"}</p>}
 					<Grid.Row>
@@ -327,7 +354,7 @@ class Recorder extends Component {
 					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 20}} selection options={extraOptions}/></Grid.Row> : null}
 					<Grid.Row>
 						
-						{!this.state.twitchInfo.id ? <a href={twitchUrl}><Button icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button></a>:
+						{!this.state.twitchInfo.id ? <Button onClick={() => {this.launchTwitchWindow(twitchUrl)}} icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button>:
 						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: -15}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>

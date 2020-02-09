@@ -9,9 +9,16 @@ const isDev = require('electron-is-dev');
 let mainWindow;
 
 function createWindow() {
-  mainWindow = new BrowserWindow({frame: false, x:450, y:600, width: 800, height: 600, webPreferences: {devTools: true}, transparent: true});
+  mainWindow = new BrowserWindow({frame: false,center: true, width: 800, height: 600, webPreferences: {devTools: true}, transparent: true});
   mainWindow.setResizable(false);
   mainWindow.setFullScreen(false)
+  // mainWindow.loadURL(
+  //   url.format({
+  //     pathname: path.join(__dirname, 'index.html'),
+  //     protocol: 'file:',
+  //     slashes: true
+  //   })
+  // )
   mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
   mainWindow.on('closed', () => mainWindow = null);
 }

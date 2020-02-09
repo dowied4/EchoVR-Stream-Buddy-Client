@@ -31,6 +31,7 @@ class Signin extends Component {
 				loaded: true
 			})
 		}
+		console.log("Rendering main component")
 	}
 
 	componentDidUpdate(prevProps, prevState){
@@ -204,15 +205,14 @@ class Signin extends Component {
 		} else {
 			return(
 				<Grid textAlign={'center'} verticalAlign={'middle'}>
-					<Grid.Row className="titlebar-window">
-						<h5 style={{top: 0, color: "white"}}>EchoVR Stream Buddy</h5>
-						<Button
-							className="titlebar-close-button"
-							circular
-							size={"mini"}
-							icon="close"
-							onClick={() => {console.log("y u no wurk")}}/>
-					</Grid.Row>
+					<div className="titlebar-window">
+						<h5 className="title">EchoVR Stream Buddy</h5>
+					</div>
+					<div className='titlebar-close-button-div'>
+						<Button className='titlebar-close-button' color="red" circular size={"mini"} icon="close" onClick={() => {
+							window.close()
+						}}/>
+					</div>
 					<Grid.Row>
 						<Button size={"mini"} animated style={{position: "absolute", left: "40px", top: "20px"}} onClick={() => this.setState({signingUp: false, error: {status:false}})}>
 							<Button.Content visible><Icon name='arrow left'/></Button.Content>
