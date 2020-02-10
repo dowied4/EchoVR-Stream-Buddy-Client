@@ -1,6 +1,6 @@
 {
   "author": "David Dowie",
-  "name": "stream-buddy-client",
+  "name": "echovr-stream-buddy",
   "version": "0.1.0",
   "private": true,
   "main": "public/electron.js",
@@ -53,6 +53,9 @@
   },
   "build": {
     "appId": "com.StreamBuddy.app",
+    "win": {
+      "icon": "buddy.ico"
+    },
     "files": [
       "build/**/*",
       "node_modules/**/*"

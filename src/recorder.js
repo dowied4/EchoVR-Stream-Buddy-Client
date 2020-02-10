@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import { Grid, Button, Icon,Label, Message, Dimmer, Loader, Dropdown, Popup, Checkbox} from 'semantic-ui-react';
 import Axios from 'axios';
+const path = require('path');
+const ipcRenderer = window.require('electron').ipcRenderer
 require("firebase/firestore");
-
 
 class Recorder extends Component {
 	constructor(props) {
@@ -34,13 +35,15 @@ class Recorder extends Component {
 		 this.launchTwitchWindow = this.launchTwitchWindow.bind(this);
 		 this.db = null
 	}
-
+	
+	
 	componentDidMount(){
 		if(!this.props.loggedIn){
 			this.props.history.push('/')
 		}
 		this.db = this.props.fb.firestore();
 		if (this.props.history.location.uid){
+			console.log(window.location)
 			this.setState({
 				loaded: true
 			}, this.checkTwitch())
@@ -59,7 +62,10 @@ class Recorder extends Component {
 		this.db.collection('users').doc(this.props.history.location.uid).get()
 		.then((user) => {
 			if (!user.exists) {
-				this.getTwitchInfo();
+				ipcRenderer.on('twitch-success', (event, arg)=> {
+					console.log('received code: ', arg)
+					this.getTwitchInfo(arg)
+				})
 				this.setState({
 					gettingTwitch: true
 				})
@@ -102,52 +108,35 @@ class Recorder extends Component {
 		})
 	}
 	launchTwitchWindow(twitchUrl){
-		var authWindow = new window.BrowserWindow({
-			width: 800, 
-			height: 600, 
-			show: false, 
-			'node-integration': true,
-			'web-security': false
-		});
-		var authUrl = twitchUrl
-		authWindow.loadURL(authUrl)
-		authWindow.show();
-		authWindow.webContents.on('will-navigate', (event, newUrl) => {
-			console.log(newUrl)
-		});
-		authWindow.on('closed', () => {
-			authWindow = null;
-		})
+		ipcRenderer.send('request-twitch-auth', 'ping')
 	}
 
-	getTwitchInfo(){
-		if(this.props.code){
-			Axios.post('https://id.twitch.tv/oauth2/token?',null,
-			{	params: {
-					client_id: process.env.REACT_APP_TWITCH_KEY,
-					client_secret: process.env.REACT_APP_CLIENT_SECRET,
-					code: this.props.code,
-					grant_type: 'authorization_code',
-					redirect_uri: 'http://localhost:3000/record/'
-			}})
-			.then(res => Axios.get('https://api.twitch.tv/helix/users?', {headers: {'Client-ID': process.env.REACT_APP_TWITCH_KEY, 'Authorization': 'Bearer ' + res.data.access_token}})
-				.then(user => {
-					let userData = user.data.data[0];
-					let tempUser = {
-						login: userData.display_name,
-						id: userData.id,
-						image: userData.profile_image_url,
-						verified: false
-					}
-					this.db.collection('users').doc(this.props.history.location.uid).set(tempUser)
-					this.setState({
-						recordId: tempUser.id,
-						twitchInfo: {...this.state.twitchInfo, ...tempUser},
-						twitchLoaded: true
-					})
-			}))
-			.catch(err => console.log(err.response))
-		}
+	getTwitchInfo(code){
+		Axios.post('https://id.twitch.tv/oauth2/token?',null,
+		{	params: {
+				client_id: process.env.REACT_APP_TWITCH_KEY,
+				client_secret: process.env.REACT_APP_CLIENT_SECRET,
+				code: code,
+				grant_type: 'authorization_code',
+				redirect_uri: 'http://localhost:3000/record/'
+		}})
+		.then(res => Axios.get('https://api.twitch.tv/helix/users?', {headers: {'Client-ID': process.env.REACT_APP_TWITCH_KEY, 'Authorization': 'Bearer ' + res.data.access_token}})
+			.then(user => {
+				let userData = user.data.data[0];
+				let tempUser = {
+					login: userData.display_name,
+					id: userData.id,
+					image: userData.profile_image_url,
+					verified: false
+				}
+				this.db.collection('users').doc(this.props.history.location.uid).set(tempUser)
+				this.setState({
+					recordId: tempUser.id,
+					twitchInfo: {...this.state.twitchInfo, ...tempUser},
+					twitchLoaded: true
+				})
+		}))
+		.catch(err => console.log(err.response))
 	}
 	componentDidUpdate(prevProps, prevState){
 		// console.log('%c 🦑 prevState: ', 'font-size:20px;background-color: #B03734;color:#fff;', prevState);
@@ -276,8 +265,8 @@ class Recorder extends Component {
     }
 
 	render() {
-		
-		let twitchUrl = "https://api.twitch.tv/kraken/oauth2/authorize?response_type=code&client_id=" + process.env.REACT_APP_TWITCH_KEY + "&redirect_uri=http://localhost:3000/record/&scope=user_read"
+		let redir = process.env.NODE_ENV === 'development' ? "http://localhost:3000/record/" : `file://${path.join(__dirname, '../build/index.html')}`
+		console.log(redir)
 		const extraOptions = [];
 		if(this.state.recordOptions.verified){
 			let tempObj;
@@ -354,7 +343,7 @@ class Recorder extends Component {
 					{this.state.recordOptions.verified ? <Grid.Row><Dropdown onChange={this.onDropDownChange} defaultValue={this.state.recordId} style={{width: 300, position: "absolute", bottom: 20}} selection options={extraOptions}/></Grid.Row> : null}
 					<Grid.Row>
 						
-						{!this.state.twitchInfo.id ? <Button onClick={() => {this.launchTwitchWindow(twitchUrl)}} icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button>:
+						{!this.state.twitchInfo.id ? <Button onClick={() => this.launchTwitchWindow()} icon labelPosition='left' style={{width: 300, top: 200}} color="purple"><Icon name="twitch"/>Connect to Twitch</Button>:
 						this.state.recording ? (<Button onMouseDown={e => e.preventDefault()} style={{width: 300, position: "absolute", bottom: -15}} animated='vertical' negative size={"large"} onClick={this.stopRecording}>
 							<Button.Content visible>Stop Recording</Button.Content>
 							<Button.Content hidden>
