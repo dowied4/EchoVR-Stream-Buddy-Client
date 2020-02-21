@@ -63,7 +63,6 @@ class Recorder extends Component {
 		.then((user) => {
 			if (!user.exists) {
 				ipcRenderer.on('twitch-success', (event, arg)=> {
-					console.log('received code: ', arg)
 					this.getTwitchInfo(arg)
 				})
 				this.setState({
@@ -180,7 +179,7 @@ class Recorder extends Component {
 	}
 
 	getMatch(first){
-		Axios.get('/session')
+		Axios.get('http://127.0.0.1/session')
 		.then((result => {
 			if (first) {
 				clearInterval(this.interval)
@@ -265,8 +264,6 @@ class Recorder extends Component {
     }
 
 	render() {
-		let redir = process.env.NODE_ENV === 'development' ? "http://localhost:3000/record/" : `file://${path.join(__dirname, '../build/index.html')}`
-		console.log(redir)
 		const extraOptions = [];
 		if(this.state.recordOptions.verified){
 			let tempObj;

@@ -56,6 +56,7 @@ function handleCallback(url){
     return code
   }
 }
+
 app.on('ready', createWindow);
 
 app.on('window-all-closed', () => {
