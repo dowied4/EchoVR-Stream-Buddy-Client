@@ -1,7 +1,7 @@
 # EchoVR-Stream-Buddy-Client
 This is the client required to stream your EchoVR data to your twitch account to allow your viewers to interact with the in game overlay to access more detailed stats.
 ### Releases
-
+https://github.com/dowied4/EchoVR-Stream-Buddy-Client/releases/tag/0.1
 ## Usage
 To run the electron app you must run:
 ```bash
