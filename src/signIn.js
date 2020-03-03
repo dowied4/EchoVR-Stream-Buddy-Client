@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Grid, Input, Button, Divider, Message, Transition, Icon } from 'semantic-ui-react'
+const ipcRenderer = window.require('electron').ipcRenderer
 require('firebase/auth');
 
 class Signin extends Component {
@@ -25,12 +26,16 @@ class Signin extends Component {
 	}
 
 	componentDidMount(){
+		ipcRenderer.on('update-complete', () => {
+			console.log('Update complete')
+			if(this.props.fb){
+				this.setState({
+					loaded: true,
+					updating: false
+				})
+			}
+		})
 		//Check if an instance of this.props.fb app exists
-		if(this.props.fb){
-			this.setState({
-				loaded: true
-			})
-		}
 		console.log("Rendering main component")
 	}
 

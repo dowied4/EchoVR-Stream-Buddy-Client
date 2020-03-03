@@ -1,4 +1,5 @@
 const electron = require('electron');
+const { autoUpdater } = require('electron-updater')
 const app = electron.app;
 const ipcMain = electron.ipcMain
 const BrowserWindow = electron.BrowserWindow;
@@ -10,9 +11,45 @@ const path = require('path');
 const url = require('url');
 const isDev = require('electron-is-dev');
 
+autoUpdater.on('checking-for-update', () =>{
+  console.log("Checking for updates...")
+  ipcMain.send('update-check')
+})
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available');
+  console.log('Version', info.version);
+  console.log('Release date', info.releaseData)
+  ipcMain.send('update-available')
+})
+
+autoUpdater.on('update-not-available', () => {
+  console.log('Update not available');
+  autoUpdater.send('update-complete')
+});
+
+autoUpdater.on('download-progress', (progress) => {
+  console.log('Downloading Update');
+  ipcMain.send('downloading-update', progress)
+  
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update Downloaded');
+  ipcMain.send('udpate-complete')
+  autoUpdater.quitAndInstall();
+})
+
+autoUpdater.on('error',  (error) => {
+  console.log(error)
+});
+
 let mainWindow;
 
 function createWindow() {
+  if(!isDev){
+    autoUpdater.checkForUpdates()
+  }
   mainWindow = new BrowserWindow({frame: false,center: true, width: 800, height: 600, webPreferences: {nodeIntegration:true, devTools: true}, transparent: true});
   mainWindow.setResizable(false);
   mainWindow.setFullScreen(false)
