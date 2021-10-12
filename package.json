@@ -24,7 +24,7 @@
     "wait-on": "^3.3.0"
   },
   "devDependencies": {
-    "electron": "^8.0.0",
+    "electron": "^11.5.0",
     "electron-builder": "^22.3.2"
   },
   "scripts": {
